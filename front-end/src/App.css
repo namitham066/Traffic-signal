@@ -1,0 +1,71 @@
+.app {
+  text-align: center;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh; /* Full height */
+  justify-content: center; /* Centers vertically */
+  background-color: #f4f4f4; /* Light background */
+}
+
+h1 {
+  font-size: 28px;
+  margin-bottom: 20px;
+  color: #333;
+  font-weight: bold;
+}
+
+/* Centered Card Container */
+.signal-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  max-width: 300px;
+}
+
+/* Traffic Signal Card Styling */
+.signal-card {
+  width: 180px;
+  height: 380px;
+  background-color: black;
+  border-radius: 15px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+/* Signal Lights */
+.signal-light {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #444;
+  margin: 10px 0;
+  transition: background 0.3s ease-in-out;
+  border: 3px solid white;
+}
+
+/* Active Light Colors */
+.red { background-color: red; }
+.yellow { background-color: yellow; }
+.green { background-color: green; }
+
+/* Pole Styling */
+.signal-pole {
+  width: 15px;
+  height: 60px;
+  background-color: black;
+  margin-top: 10px;
+  border-radius: 5px;
+}
