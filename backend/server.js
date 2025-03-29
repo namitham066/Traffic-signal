@@ -7,6 +7,8 @@ const connectDB = require("./config/db");
 const mongoose = require("mongoose");
 const Signal = require("./models/Signal"); 
 const signalRoutes = require("./routes/signalRoutes"); 
+const SIGNAL_COLURS = ['Red', 'Yellow', 'Green'];
+
 
 dotenv.config();
 connectDB();
@@ -61,24 +63,96 @@ app.get("/", (req, res) => {
 });
 
 // ✅ Real-time updates using Socket.io
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
   console.log("Client connected");
 
-  socket.on("updateSignal", async ({ signalId, signal_color }) => {
-    try {
-      const updatedSignal = await Signal.findOneAndUpdate(
-        { signalId },
-        { $set: { signal_color, timestamp: new Date() } },
-        { new: true, upsert: true }
-      );
-      
-      io.emit("receiveSignal", updatedSignal);
-    } catch (error) {
-      console.error("Error updating signal:", error);
-    }
+  // get all the signals from the database
+  // group all distinct the signals by signalId
+  let signals = await Signal.aggregate([
+    {
+      $group: {
+        _id: "$signalId",
+        signal_color: { $first: "$signal_color" },
+        timestamp: { $first: "$timestamp" },
+      },
+    },
+    {
+      $project: {
+        signalId: "$_id",
+        signal_color: 1,
+        timestamp: 1,
+      }
+    },
+    {
+      $sort: { timestamp: -1 },
+    },
+  ])
+  console.log("🚀 ~ io.on ~ signals:", signals)
+
+  signals = signals.filter((signal) => signal.signalId);
+
+  // Emit the signals to the client
+  socket.emit("signalsInit", signals);
+
+  // signal change logic for each signals
+  signals.forEach((signal) => {
+
+    let interval = signalMechanism(signal, socket);
+
+    // clear the interval when the socket disconnects
+    socket.on("disconnect", () => {
+      clearInterval(interval);
+    });
   });
+
+
+
+
+
+  // socket.on("updateSignal", async ({ signalId, signal_color }) => {
+  //   try {
+  //     const updatedSignal = await Signal.findOneAndUpdate(
+  //       { signalId },
+  //       { $set: { signal_color, timestamp: new Date() } },
+  //       { new: true, upsert: true }
+  //     );
+      
+  //     io.emit("receiveSignal", updatedSignal);
+  //   } catch (error) {
+  //     console.error("Error updating signal:", error);
+  //   }
+  // });
 
   socket.on("disconnect", () => console.log("Client disconnected"));
 });
+
+
+const signalMechanism = (signal, socket) => {
+  let interval = setInterval(() => {
+      const { signalId, signal_color } = signal;
+      // update the signal color
+      const currentIndex = SIGNAL_COLURS.indexOf(signal_color);
+      const nextIndex = (currentIndex + 1) % SIGNAL_COLURS.length;
+      const newSignalColor = SIGNAL_COLURS[nextIndex];
+    
+    
+      const newSignal = {
+        signalId,
+        signal_color: newSignalColor,
+        timestamp: new Date(),
+      };
+    
+      // Emit the new signal to the client
+      socket.emit("receiveSignal", newSignal);
+
+      signal.signal_color = newSignalColor;
+
+      // Save the new signal to MongoDB
+      Signal.create(newSignal)
+        .then(() => console.log("Signal saved to MongoDB"))
+        .catch((error) => console.error("Error saving signal:", error));
+  }, 10000);
+  return interval;
+}
 
 server.listen(5000, () => console.log("Server running on port 5000"));

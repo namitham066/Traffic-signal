@@ -7,46 +7,39 @@ import greenLight from "../assets/Images/green.jpg";
 const signalColors = ["Red", "Yellow", "Green"];
 const signalImages = { Red: redLight, Yellow: yellowLight, Green: greenLight };
 
-const SignalCard = ({ signalId, initialColor, updateSignal }) => {
+const SignalCard = ({ signalId, initialColor, updateSignal, socket }) => {
   const [currentColor, setCurrentColor] = useState(initialColor);
   const [history, setHistory] = useState([]);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentColor((prevColor) => {
-        const nextIndex = (signalColors.indexOf(prevColor) + 1) % signalColors.length;
-        const newColor = signalColors[nextIndex];
 
-        setHistory((prevHistory) => {
-          const newHistory = [{ color: newColor, timestamp: new Date().toLocaleString() }, ...prevHistory];
-          return newHistory.slice(0, 10);
-        });
-
-        return newColor;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
+    socket.on("receiveSignal", (signal) => {
+      console.log("🚀 ~ socket.on ~ signal:", signal);
+      
+      if (signal.signalId === signalId) {
+        setCurrentColor(signal.signal_color);
+      }
+    });
+    
   }, []);
 
-  // ✅ Function to manually change signal color
-  const handleSignalChange = (newColor) => {
-    setCurrentColor(newColor);
 
-    setHistory((prevHistory) => {
-      const newHistory = [{ color: newColor, timestamp: new Date().toLocaleString() }, ...prevHistory];
-      return newHistory.slice(0, 10);
-    });
-
-    // if (updateSignal) {
-      updateSignal(signalId, newColor); // Call backend function if provided
-    // }
-  };
 
   const handleCardClick = () => {
     setIsPopupOpen(true);
+
+    fetchHistory();
   };
+  const fetchHistory = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/signals?signalId=${signalId}`);
+      const data = await response.json();
+      setHistory(data);
+    } catch (error) {
+      console.error("Error fetching signal history:", error);
+    }
+  }
 
   const closePopup = () => {
     setIsPopupOpen(false);
@@ -57,19 +50,6 @@ const SignalCard = ({ signalId, initialColor, updateSignal }) => {
       <h3>Signal {signalId}</h3>
       <img src={signalImages[currentColor]} alt={currentColor} className="signal-image" />
       <p>Current: {currentColor}</p>
-
-      {/* 🔹 Buttons to manually update signal */}
-      <div className="signal-buttons">
-        <button onClick={() => handleSignalChange("Red")} style={{ background: "red" }}>
-          Red
-        </button>
-        <button onClick={() => handleSignalChange("Yellow")} style={{ background: "yellow" }}>
-          Yellow
-        </button>
-        <button onClick={() => handleSignalChange("Green")} style={{ background: "green" }}>
-          Green
-        </button>
-      </div>
 
       {isPopupOpen && (
         <div className="popup" onClick={closePopup}>
@@ -85,8 +65,8 @@ const SignalCard = ({ signalId, initialColor, updateSignal }) => {
               <tbody>
                 {history.map((entry, index) => (
                   <tr key={index}>
-                    <td>{entry.color}</td>
-                    <td>{entry.timestamp}</td>
+                    <td>{entry.signal_color}</td>
+                    <td>{new Date(entry.timestamp).toLocaleDateString()}-{new Date(entry.timestamp).toLocaleTimeString()}</td>
                   </tr>
                 ))}
               </tbody>

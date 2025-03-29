@@ -32,8 +32,8 @@ router.post("/update-signal", async (req, res) => {
 // ✅ Fetch last 10 updates for a specific signal
 router.get("/", async (req, res) => {
   try {
-    // const { signalId } = req.query;
-    const history = await Signal.find({ })
+    const { signalId } = req.query;
+    const history = await Signal.find({ signalId })
       .sort({ timestamp: -1 }) // Sort latest first
       .limit(10); // Get only last 10 records
 

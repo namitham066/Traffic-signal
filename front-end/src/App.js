@@ -9,23 +9,13 @@ const App = () => {
   const [signals, setSignals] = useState([]);
 
   useEffect(() => {
-    // Fetch initial signals
-    const fetchSignals = async () => {
-      try {
-        const { data } = await axios.get("http://localhost:5000/api/signals?signalId=S1");
-        setSignals(data);
-      } catch (error) {
-        console.error("Error fetching signals:", error);
-      }
-    };
-
-    fetchSignals();
-
-    // Listen for real-time updates
-    socket.on("receiveSignal", (updatedSignals) => {
-      setSignals(updatedSignals); // Replace full list of 10 signals
-    });
     
+    // Listen for real-time updates
+    socket.on("signalsInit", (updatedSignals) => {
+      if(!signals.lenth){
+        setSignals(updatedSignals); // Replace full list of 10 signals
+      }
+    });
 
     return () => socket.off("receiveSignal"); // Cleanup on unmount
   }, []);
@@ -40,6 +30,7 @@ const App = () => {
       key={signal.signalId || index}
       signalId={signal.signalId}
       initialColor={signal.signal_color}
+      socket={socket}
     />
   ))
 ) : (
